@@ -1,5 +1,32 @@
 @import "tailwindcss";
 
+/* Wcięcia ekranu. WebView < 140 podaje błędne env(safe-area-inset-*), więc
+   najpierw zmienne wstrzykiwane przez Capacitor 8 (SystemBars), env() jako zapas. */
+:root {
+  --sa-top:    var(--safe-area-inset-top,    env(safe-area-inset-top, 0px));
+  --sa-right:  var(--safe-area-inset-right,  env(safe-area-inset-right, 0px));
+  --sa-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --sa-left:   var(--safe-area-inset-left,   env(safe-area-inset-left, 0px));
+}
+
+/* Cel dotykowy min. 44x44 px bez zmiany wyglądu: niewidoczny pseudo-element. */
+@layer base {
+  button { position: relative; }
+  button::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  /* W rzędach i siatkach (np. dni w kalendarzu) powiększone pole późniejszego
+     przycisku przykrywało brzeg sąsiada i przejmowało jego dotknięcia. */
+  button:has(+ button)::after,
+  button + button::after { content: none; }
+}
+
 :root {
   color-scheme: dark;
 }

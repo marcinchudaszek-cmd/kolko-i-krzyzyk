@@ -211,7 +211,7 @@ export default function App() {
 
   if (ekran === 'menu') {
     return (
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-5 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-5 px-4 pb-[max(1rem,var(--sa-bottom))] pt-[max(1.5rem,var(--sa-top))]">
         <header className="text-center">
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
             Kółko <span className="text-amber-400">&</span> Krzyżyk
@@ -328,7 +328,7 @@ export default function App() {
           : `Ruch gracza ${naRuchu}`;
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-3 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-3 px-3 pb-[max(0.75rem,var(--sa-bottom))] pt-[max(0.75rem,var(--sa-top))]">
       <header className="flex items-center gap-2">
         <button
           type="button"
