@@ -3,3 +3,6 @@ dist/
 *.local
 .DS_Store
 android/
+
+# paczki do Google Play
+wydanie/
