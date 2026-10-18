@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
     // z tlem body w src/index.css, inaczej start aplikacji mignie innym kolorem.
     backgroundColor: '#0b1120',
   },
+  plugins: {
+    // Ciemne tło gry — jasne ikony paska stanu i nawigacji
+    SystemBars: { style: 'DARK' },
+  },
 };
 
 export default config;

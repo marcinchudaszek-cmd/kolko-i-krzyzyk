@@ -1,6 +1,7 @@
 # Kółko i Krzyżyk
 
-Kółko i krzyżyk w czterech trybach, z przeciwnikiem komputerowym na trzech poziomach.
+Kółko i krzyżyk w siedmiu trybach, z przeciwnikiem komputerowym na trzech poziomach,
+meczami do 1/3/5 wygranych, kampanią (10 przeciwników) i odznakami.
 Gra w przeglądarce: **https://beagleapps.pl/games/tic-tac-toe/**
 
 ## Tryby
@@ -11,6 +12,9 @@ Gra w przeglądarce: **https://beagleapps.pl/games/tic-tac-toe/**
 | **5×5** | plansza 5×5, cztery w rzędzie |
 | **Misère** | 3×3 na odwrót — kto ułoży rząd, ten przegrywa |
 | **Ultimate** | dziewięć małych plansz; zagrane pole wyznacza planszę przeciwnika |
+| **Znikające** | 3×3, każdy ma najwyżej 3 znaki — czwarty kasuje najstarszy |
+| **Pięć w rzędzie** | plansza 10×10, pięć w rzędzie (15×15 dawałoby za małe pola na telefonie) |
+| **Czwórki** | 7×6 z grawitacją, cztery w rzędzie |
 
 ## Przeciwnik
 
@@ -31,7 +35,7 @@ między trybami.
 
 ```bash
 npm install
-npm test        # 15 testów, m.in. 40 partii przeciw mistrzowi bez porażki
+npm test        # 26 testów: zasady trybów, AI, odznaki i kampania
 npm run dev
 npm run build   # dist/index.html — jeden plik, do wgrania na stronę
 ```
@@ -42,3 +46,9 @@ Menu i plansza mieszczą się bez przewijania na 375×812, cele dotykowe mają
 co najmniej 44 px. Wyjątkiem jest Ultimate: 81 pól na szerokości 375 px daje
 32 px na pole i więcej fizycznie się nie mieści — chroni nas to, że aktywna
 jest zawsze tylko jedna mała plansza, a pozostałe są zablokowane.
+
+## Kampania
+
+Dziesięciu przeciwników w różnych trybach (`src/gra/profil.ts`). Finał to Pięć w rzędzie
+na poziomie mistrz — mistrza Znikających nie pokonał w testach nawet gracz liczący
+11 półruchów naprzód, więc z nim kampanii nie dałoby się ukończyć.

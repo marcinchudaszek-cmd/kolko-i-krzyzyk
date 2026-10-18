@@ -9,7 +9,6 @@ import {
   Pole,
   Znak,
   Zasady,
-  linie,
   oceń,
   przeciwnik,
   wolnePola,
@@ -18,6 +17,11 @@ import {
   ruchUltimate,
   megaPlansza,
   ZASADY,
+  linieDla,
+  dozwolone,
+  StanZnikajace,
+  ruchZnikajacy,
+  wierszeDla,
 } from './logika';
 
 export type Poziom = 'latwy' | 'sredni' | 'mistrz';
@@ -31,7 +35,7 @@ export const NAZWY_POZIOMOW: Record<Poziom, string> = {
 export const OPISY_POZIOMOW: Record<Poziom, string> = {
   latwy: 'Czasem zagra przypadkowo. Dobry na rozgrzewkę.',
   sredni: 'Broni się i wykorzystuje błędy, ale nie liczy do końca.',
-  mistrz: 'Na 3×3 nie da się wygrać — najlepsze, co możesz osiągnąć, to remis.',
+  mistrz: 'Liczy daleko naprzód. Na klasycznym 3×3 nie da się wygrać — najlepsze, co możesz osiągnąć, to remis.',
 };
 
 const losowy = <T,>(t: T[]): T => t[Math.floor(Math.random() * t.length)];
@@ -43,7 +47,7 @@ const losowy = <T,>(t: T[]): T => t[Math.floor(Math.random() * t.length)];
 function ocenPozycje(plansza: Pole[], zasady: Zasady, ja: Znak): number {
   const on = przeciwnik(ja);
   let wynik = 0;
-  for (const l of linie(zasady.bok, zasady.doWygranej)) {
+  for (const l of linieDla(zasady)) {
     let moje = 0;
     let jego = 0;
     for (const i of l) {
@@ -79,7 +83,7 @@ function minimax(
   const maksymalizuje = naRuchu === ja;
   let najlepszy = maksymalizuje ? -Infinity : Infinity;
 
-  for (const i of wolnePola(plansza)) {
+  for (const i of dozwolone(plansza, zasady)) {
     plansza[i] = naRuchu;
     const w = minimax(plansza, zasady, ja, przeciwnik(naRuchu), glebokosc - 1, alfa, beta);
     plansza[i] = null;
@@ -98,6 +102,7 @@ function minimax(
 
 function glebokoscDla(zasady: Zasady, wolne: number, poziom: Poziom): number {
   if (poziom === 'latwy') return 1;
+  if (zasady.grawitacja) return poziom === 'sredni' ? 3 : 6; // Czwórki: 7 ruchów na węzeł
   if (zasady.bok === 3) return 9; // pełne drzewo, tanio
   if (poziom === 'sredni') return 3;
   // 5×5: pełne drzewo odpada, ale przy malejącej liczbie pól można głębiej
@@ -110,7 +115,8 @@ export function ruchAI(
   ja: Znak,
   poziom: Poziom
 ): number | null {
-  const wolne = wolnePola(plansza);
+  if (zasady.bok * wierszeDla(zasady) > 49 && !zasady.grawitacja) return ruchAIGomoku(plansza, zasady, ja, poziom);
+  const wolne = dozwolone(plansza, zasady);
   if (wolne.length === 0) return null;
 
   // Łatwy myli się celowo — inaczej nawet płytki minimax bywa nie do ruszenia.
@@ -137,6 +143,109 @@ export function ruchAI(
 
   // Remis między równorzędnymi ruchami rozstrzygamy losowo, żeby AI nie grało
   // za każdym razem tej samej partii.
+  return losowy(najlepsze);
+}
+
+/* ──────────────────────────── Pięć w rzędzie ───────────────────────── */
+
+/** Wagi za linię z k własnymi znakami (i zerem cudzych) — rosną skokowo, bo
+ *  otwarta czwórka to prawie wygrana, a dwójka to dopiero zalążek. */
+const WAGI_ATAKU = [0, 2, 12, 120, 2_000, 100_000];
+const WAGI_OBRONY = [0, 1, 10, 100, 1_500, 50_000];
+
+/**
+ * Plansza 10×10 ma za duże drzewo na minimax, więc ruch wybiera ocena
+ * zagrożeń: każde pole dostaje punkty za linie, które przez nie przechodzą —
+ * za własne (atak) i za cudze (obrona). Rozważane są tylko pola w pobliżu
+ * zagranych znaków.
+ */
+export function ruchAIGomoku(plansza: Pole[], zasady: Zasady, ja: Znak, poziom: Poziom): number | null {
+  const on = przeciwnik(ja);
+  const bok = zasady.bok;
+  const wiersze = wierszeDla(zasady);
+  const wolne = wolnePola(plansza);
+  if (wolne.length === 0) return null;
+  if (wolne.length === plansza.length) {
+    // pierwszy ruch: w okolicach środka
+    const srodek = Math.floor(wiersze / 2) * bok + Math.floor(bok / 2);
+    return srodek;
+  }
+
+  const blisko = (i: number) => {
+    const x = i % bok, y = Math.floor(i / bok);
+    for (let dy = -2; dy <= 2; dy++)
+      for (let dx = -2; dx <= 2; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < bok && ny >= 0 && ny < wiersze && plansza[ny * bok + nx] !== null) return true;
+      }
+    return false;
+  };
+  const kandydaci = wolne.filter(blisko);
+
+  const liniePrzez = new Map<number, number[][]>();
+  for (const l of linieDla(zasady)) for (const i of l) {
+    if (!liniePrzez.has(i)) liniePrzez.set(i, []);
+    liniePrzez.get(i)!.push(l);
+  }
+
+  const ocenione = kandydaci.map(i => {
+    let punkty = 0;
+    for (const l of liniePrzez.get(i) ?? []) {
+      let moje = 0, jego = 0;
+      for (const j of l) {
+        if (plansza[j] === ja) moje++;
+        else if (plansza[j] === on) jego++;
+      }
+      if (jego === 0) punkty += WAGI_ATAKU[moje + 1] ?? 0;
+      if (moje === 0) punkty += WAGI_OBRONY[jego + 1] ?? 0;
+    }
+    return { i, punkty };
+  }).sort((a, b) => b.punkty - a.punkty);
+
+  if (poziom === 'latwy') return losowy(ocenione.slice(0, 8)).i;
+  if (poziom === 'sredni') {
+    // średni czasem przeoczy groźbę — wybiera spośród trzech najlepszych
+    return Math.random() < 0.7 ? ocenione[0].i : losowy(ocenione.slice(0, 3)).i;
+  }
+  const najlepsze = ocenione.filter(o => o.punkty === ocenione[0].punkty);
+  return losowy(najlepsze).i;
+}
+
+/* ──────────────────────────── Znikające znaki ─────────────────────── */
+
+function minimaxZnikajace(stan: StanZnikajace, ja: Znak, naRuchu: Znak, glebokosc: number, alfa: number, beta: number): number {
+  const ocena = oceń(stan.plansza, ZASADY.klasyk);
+  if (ocena.zwyciezca === ja) return 1_000_000 + glebokosc * 100;
+  if (ocena.zwyciezca === przeciwnik(ja)) return -1_000_000 - glebokosc * 100;
+  if (glebokosc <= 0) return ocenPozycje(stan.plansza, ZASADY.klasyk, ja);
+  const maks = naRuchu === ja;
+  let najlepszy = maks ? -Infinity : Infinity;
+  for (const i of wolnePola(stan.plansza)) {
+    const po = ruchZnikajacy(stan, i, naRuchu);
+    if (!po) continue;
+    const w = minimaxZnikajace(po, ja, przeciwnik(naRuchu), glebokosc - 1, alfa, beta);
+    if (maks) { najlepszy = Math.max(najlepszy, w); alfa = Math.max(alfa, w); }
+    else { najlepszy = Math.min(najlepszy, w); beta = Math.min(beta, w); }
+    if (beta <= alfa) break;
+  }
+  return najlepszy;
+}
+
+/** Znikające znaki: minimax po stanie z kolejkami (partia nie ma końca, więc
+ *  głębokość jest ograniczona; mistrz liczy 7 półruchów naprzód). */
+export function ruchAIZnikajace(stan: StanZnikajace, ja: Znak, poziom: Poziom): number | null {
+  const wolne = wolnePola(stan.plansza);
+  if (wolne.length === 0) return null;
+  if (poziom === 'latwy' && Math.random() < 0.4) return losowy(wolne);
+  const glebokosc = poziom === 'latwy' ? 1 : poziom === 'sredni' ? 3 : 7;
+  let najlepsza = -Infinity;
+  let najlepsze: number[] = [];
+  for (const i of wolne) {
+    const po = ruchZnikajacy(stan, i, ja)!;
+    const w = minimaxZnikajace(po, ja, przeciwnik(ja), glebokosc - 1, -Infinity, Infinity);
+    if (w > najlepsza) { najlepsza = w; najlepsze = [i]; }
+    else if (w === najlepsza) najlepsze.push(i);
+  }
   return losowy(najlepsze);
 }
 
