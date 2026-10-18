@@ -211,7 +211,7 @@ export default function App() {
 
   if (ekran === 'menu') {
     return (
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-5 px-4 pb-[max(1rem,var(--sa-bottom))] pt-[max(1.5rem,var(--sa-top))]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col gap-4 px-4 pb-[max(1rem,var(--sa-bottom))] pt-[max(1.5rem,var(--sa-top))]">
         <header className="text-center">
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
             Kółko <span className="text-amber-400">&</span> Krzyżyk
@@ -223,27 +223,29 @@ export default function App() {
           <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-widest text-slate-500">
             Tryb gry
           </h2>
-          <div className="flex flex-col gap-2">
+          {/* 2×2 i opis tylko wybranego trybu — cztery karty z opisami nie mieściły
+              się na telefonie i przycisk „Graj” lądował pod ekranem */}
+          <div className="grid grid-cols-2 gap-2">
             {(Object.keys(NAZWY_TRYBOW) as Tryb[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTryb(t)}
                 className={[
-                  'rounded-2xl border p-4 text-left transition-colors',
+                  'min-h-[52px] rounded-2xl border px-3 py-2 text-left transition-colors',
                   t === tryb
                     ? 'border-amber-400/70 bg-amber-500/10'
                     : 'border-slate-700/60 bg-slate-800/40 active:bg-slate-700/50',
                 ].join(' ')}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-lg font-bold text-white">{NAZWY_TRYBOW[t]}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-base font-bold text-white">{NAZWY_TRYBOW[t]}</span>
                   {t === tryb && <span className="text-amber-400">✓</span>}
                 </div>
-                <p className="mt-1 text-sm leading-snug text-slate-400">{OPISY_TRYBOW[t]}</p>
               </button>
             ))}
           </div>
+          <p className="mt-2 px-1 text-sm leading-snug text-slate-400">{OPISY_TRYBOW[tryb]}</p>
         </section>
 
         <section>
